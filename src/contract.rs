@@ -6,12 +6,18 @@ use cosmwasm_std::{
 use cw2::set_contract_version;
 
 use crate::error::ContractError;
-use crate::msg::{ChainSettingInfo, ExecuteMsg, InstantiateMsg, PalomaMsg, QueryMsg};
+use crate::msg::{ChainSettingInfo, ExecuteMsg, InstantiateMsg, MigrateMsg, PalomaMsg, QueryMsg};
 use crate::state::{State, CHAIN_SETTINGS, STATE};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:pusd-connector-cw";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Response> {
+    set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+    Ok(Response::default())
+}
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -56,10 +62,22 @@ pub fn execute(
             recipient,
             amount,
         } => execute::withdraw_pusd(deps, info, chain_id, recipient, amount),
-        ExecuteMsg::ChangeConfig { pusd_manager } => {
-            execute::change_config(deps, info, pusd_manager)
-        }
+        ExecuteMsg::ChangeConfig {
+            owner,
+            pusd_manager,
+        } => execute::change_config(deps, info, owner, pusd_manager),
         ExecuteMsg::SetPaloma { chain_id } => execute::set_paloma(deps, info, chain_id),
+        ExecuteMsg::UpdateWithdrawLimit {
+            chain_id,
+            new_withdraw_limit,
+        } => execute::update_withdraw_limit(deps, info, chain_id, new_withdraw_limit),
+        ExecuteMsg::UpdatePusd { chain_id, new_pusd } => {
+            execute::update_pusd(deps, info, chain_id, new_pusd)
+        }
+        ExecuteMsg::UpdatePusdManager {
+            chain_id,
+            new_pusd_manager,
+        } => execute::update_pusd_manager(deps, info, chain_id, new_pusd_manager),
         ExecuteMsg::UpdateRefundWallet {
             chain_id,
             new_refund_wallet,
@@ -172,17 +190,26 @@ pub mod execute {
     pub fn change_config(
         deps: DepsMut,
         info: MessageInfo,
-        pusd_manager: Addr,
+        owner: Option<Addr>,
+        pusd_manager: Option<Addr>,
     ) -> Result<Response<PalomaMsg>, ContractError> {
         let mut state = STATE.load(deps.storage)?;
         if info.sender != state.owner {
             return Err(ContractError::Unauthorized {});
         }
-        state.pusd_manager = pusd_manager.clone();
+        let mut response: Response<PalomaMsg> =
+            Response::new().add_attribute("action", "change_config");
+
+        if let Some(owner) = owner {
+            state.owner = owner.clone();
+            response = response.add_attribute("new_owner", owner.to_string());
+        }
+        if let Some(pusd_manager) = pusd_manager {
+            state.pusd_manager = pusd_manager.clone();
+            response = response.add_attribute("new_pusd_manager", pusd_manager.to_string());
+        }
         STATE.save(deps.storage, &state)?;
-        Ok(Response::new()
-            .add_attribute("action", "change_config")
-            .add_attribute("pusd_manager", pusd_manager))
+        Ok(response)
     }
 
     pub fn set_paloma(
@@ -226,6 +253,151 @@ pub mod execute {
                 },
             }))
             .add_attribute("action", "set_paloma"))
+    }
+
+    pub fn update_withdraw_limit(
+        deps: DepsMut,
+        info: MessageInfo,
+        chain_id: String,
+        new_withdraw_limit: Uint256,
+    ) -> Result<Response<PalomaMsg>, ContractError> {
+        // ACTION: Implement UpdateWithdrawLimit
+        let state = STATE.load(deps.storage)?;
+        assert!(info.sender == state.owner, "Unauthorized");
+        let new_withdraw_limit: Uint = Uint::from_big_endian(&new_withdraw_limit.to_be_bytes());
+        #[allow(deprecated)]
+        let contract: Contract = Contract {
+            constructor: None,
+            functions: BTreeMap::from_iter(vec![(
+                "update_withdraw_limit".to_string(),
+                vec![Function {
+                    name: "update_withdraw_limit".to_string(),
+                    inputs: vec![Param {
+                        name: "new_withdraw_limit".to_string(),
+                        kind: ParamType::Uint(256),
+                        internal_type: None,
+                    }],
+                    outputs: Vec::new(),
+                    constant: None,
+                    state_mutability: StateMutability::NonPayable,
+                }],
+            )]),
+            events: BTreeMap::new(),
+            errors: BTreeMap::new(),
+            receive: false,
+            fallback: false,
+        };
+        Ok(Response::new()
+            .add_message(CosmosMsg::Custom(PalomaMsg::SchedulerMsg {
+                execute_job: ExecuteJob {
+                    job_id: CHAIN_SETTINGS.load(deps.storage, chain_id.clone())?.job_id,
+                    payload: Binary::new(
+                        contract
+                            .function("update_withdraw_limit")
+                            .unwrap()
+                            .encode_input(&[Token::Uint(new_withdraw_limit)])
+                            .unwrap(),
+                    ),
+                },
+            }))
+            .add_attribute("action", "update_withdraw_limit"))
+    }
+
+    pub fn update_pusd(
+        deps: DepsMut,
+        info: MessageInfo,
+        chain_id: String,
+        new_pusd: String,
+    ) -> Result<Response<PalomaMsg>, ContractError> {
+        // ACTION: Implement UpdatePusd
+        let state = STATE.load(deps.storage)?;
+        assert!(info.sender == state.owner, "Unauthorized");
+        let new_pusd_address: Address = Address::from_str(new_pusd.as_str()).unwrap();
+        #[allow(deprecated)]
+        let contract: Contract = Contract {
+            constructor: None,
+            functions: BTreeMap::from_iter(vec![(
+                "update_pusd".to_string(),
+                vec![Function {
+                    name: "update_pusd".to_string(),
+                    inputs: vec![Param {
+                        name: "new_pusd".to_string(),
+                        kind: ParamType::Address,
+                        internal_type: None,
+                    }],
+                    outputs: Vec::new(),
+                    constant: None,
+                    state_mutability: StateMutability::NonPayable,
+                }],
+            )]),
+            events: BTreeMap::new(),
+            errors: BTreeMap::new(),
+            receive: false,
+            fallback: false,
+        };
+        Ok(Response::new()
+            .add_message(CosmosMsg::Custom(PalomaMsg::SchedulerMsg {
+                execute_job: ExecuteJob {
+                    job_id: CHAIN_SETTINGS.load(deps.storage, chain_id.clone())?.job_id,
+                    payload: Binary::new(
+                        contract
+                            .function("update_pusd")
+                            .unwrap()
+                            .encode_input(&[Token::Address(new_pusd_address)])
+                            .unwrap(),
+                    ),
+                },
+            }))
+            .add_attribute("action", "update_pusd"))
+    }
+
+    pub fn update_pusd_manager(
+        deps: DepsMut,
+        info: MessageInfo,
+        chain_id: String,
+        new_pusd_manager: String,
+    ) -> Result<Response<PalomaMsg>, ContractError> {
+        // ACTION: Implement UpdatePusdManager
+        let state = STATE.load(deps.storage)?;
+        assert!(info.sender == state.owner, "Unauthorized");
+        let new_pusd_manager_address: Address =
+            Address::from_str(new_pusd_manager.as_str()).unwrap();
+        #[allow(deprecated)]
+        let contract: Contract = Contract {
+            constructor: None,
+            functions: BTreeMap::from_iter(vec![(
+                "update_pusd_manager".to_string(),
+                vec![Function {
+                    name: "update_pusd_manager".to_string(),
+                    inputs: vec![Param {
+                        name: "new_pusd_manager".to_string(),
+                        kind: ParamType::Address,
+                        internal_type: None,
+                    }],
+                    outputs: Vec::new(),
+                    constant: None,
+                    state_mutability: StateMutability::NonPayable,
+                }],
+            )]),
+            events: BTreeMap::new(),
+            errors: BTreeMap::new(),
+            receive: false,
+            fallback: false,
+        };
+        Ok(Response::new()
+            .add_message(CosmosMsg::Custom(PalomaMsg::SchedulerMsg {
+                execute_job: ExecuteJob {
+                    job_id: CHAIN_SETTINGS.load(deps.storage, chain_id.clone())?.job_id,
+                    payload: Binary::new(
+                        contract
+                            .function("update_pusd_manager")
+                            .unwrap()
+                            .encode_input(&[Token::Address(new_pusd_manager_address)])
+                            .unwrap(),
+                    ),
+                },
+            }))
+            .add_attribute("action", "update_pusd_manager"))
     }
 
     pub fn update_refund_wallet(
@@ -294,7 +466,7 @@ pub mod execute {
                     name: "update_gas_fee".to_string(),
                     inputs: vec![Param {
                         name: "new_gas_fee".to_string(),
-                        kind: ParamType::Address,
+                        kind: ParamType::Uint(256),
                         internal_type: None,
                     }],
                     outputs: Vec::new(),
@@ -389,7 +561,7 @@ pub mod execute {
                     name: "update_service_fee".to_string(),
                     inputs: vec![Param {
                         name: "new_service_fee".to_string(),
-                        kind: ParamType::Address,
+                        kind: ParamType::Uint(256),
                         internal_type: None,
                     }],
                     outputs: Vec::new(),
