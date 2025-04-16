@@ -9,6 +9,9 @@ pub struct InstantiateMsg {
 }
 
 #[cw_serde]
+pub struct MigrateMsg {}
+
+#[cw_serde]
 pub enum ExecuteMsg {
     // Register Jobs in hash map with chain_id as key and job_id as value
     RegisterChain {
@@ -27,9 +30,13 @@ pub enum ExecuteMsg {
         amount: Uint128,
     },
     ChangeConfig {
-        pusd_manager: Addr,
+        owner: Option<Addr>,
+        pusd_manager: Option<Addr>,
     },
-
+    UpdateWithdrawLimit {
+        chain_id: String,
+        new_withdraw_limit: Uint256,
+    },
     // Set Paloma address of a chain
     SetPaloma {
         chain_id: String,
@@ -53,6 +60,16 @@ pub enum ExecuteMsg {
     UpdateServiceFee {
         chain_id: String,
         new_service_fee: Uint256,
+    },
+    // Update Pusd
+    UpdatePusd {
+        chain_id: String,
+        new_pusd: String,
+    },
+    // Update Pusd Manager
+    UpdatePusdManager {
+        chain_id: String,
+        new_pusd_manager: String,
     },
 }
 
