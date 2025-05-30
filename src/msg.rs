@@ -1,6 +1,7 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Addr, Binary, CustomMsg, Uint128, Uint256};
 
+#[allow(unused_imports)]
 use crate::state::{ChainSetting, State};
 
 #[cw_serde]
@@ -28,6 +29,9 @@ pub enum ExecuteMsg {
         chain_id: String,
         recipient: String,
         amount: Uint128,
+    },
+    CancelTx {
+        transaction_id: u64,
     },
     ChangeConfig {
         owner: Option<Addr>,

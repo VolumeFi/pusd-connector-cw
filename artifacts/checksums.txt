@@ -1,1 +1,1 @@
-82a93fc77e3607e9dfa81304a430fa9f4ccb8f694c077d4dbc641e9b7f743ff8  pusd_connector_cw.wasm
+aad12523a07603b91c234dc56e7eb3d8c1ebaf7e5949c7b178193fced278c977  pusd_connector_cw.wasm

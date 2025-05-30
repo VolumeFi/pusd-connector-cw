@@ -62,6 +62,7 @@ pub fn execute(
             recipient,
             amount,
         } => execute::withdraw_pusd(deps, info, chain_id, recipient, amount),
+        ExecuteMsg::CancelTx { transaction_id } => execute::cancel_tx(deps, info, transaction_id),
         ExecuteMsg::ChangeConfig {
             owner,
             pusd_manager,
@@ -105,7 +106,7 @@ pub mod execute {
 
     use super::*;
     use crate::{
-        msg::{ExecuteJob, ExternalExecuteMsg, PalomaMsg, SendTx},
+        msg::{CancelTx, ExecuteJob, ExternalExecuteMsg, PalomaMsg, SendTx},
         state::{ChainSetting, CHAIN_SETTINGS},
     };
     use std::str::FromStr;
@@ -185,6 +186,21 @@ pub mod execute {
                 }],
             }))
             .add_attribute("action", "withdraw_pusd"))
+    }
+
+    pub fn cancel_tx(
+        deps: DepsMut,
+        info: MessageInfo,
+        transaction_id: u64,
+    ) -> Result<Response<PalomaMsg>, ContractError> {
+        let state = STATE.load(deps.storage)?;
+        assert!(info.sender == state.owner, "Unauthorized");
+        Ok(Response::new()
+            .add_message(CosmosMsg::Custom(PalomaMsg::SkywayMsg {
+                send_tx: None,
+                cancel_tx: Some(CancelTx { transaction_id }),
+            }))
+            .add_attribute("action", "cancel_tx"))
     }
 
     pub fn change_config(

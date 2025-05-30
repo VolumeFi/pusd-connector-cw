@@ -1,0 +1,42 @@
+palomad tx wasm store artifacts/pusd_connector_cw.wasm --from paloma1arwskydtxc8w6jw0pa227yslmzrwllspxrlaga --output json --gas auto --gas-adjustment 1.2 --fees 500ugrain -y
+0d701467dc276a24cc2ecfb69717769c04525136b41e5bc11978ba96992a3d11
+code_id = 169
+
+palomad tx wasm instantiate 169 '{"pusd_manager": "paloma1fjpz4qg6s08ecanqn84gl8fpwvdqtssjsl2vacuxy4tddn7g3mkqeey590"}' \
+--from paloma1arwskydtxc8w6jw0pa227yslmzrwllspxrlaga \
+--label "pusd-connector" \
+--admin paloma1arwskydtxc8w6jw0pa227yslmzrwllspxrlaga \
+--gas auto \
+--gas-adjustment 1.2 \
+--output json
+
+paloma1r3expjc73az2u3l3zrzfl9c92smtpud0vl53v6tw6l6cg64des0qv6yg7c
+
+palomad tx wasm store artifacts/pusd_connector_cw.wasm --from paloma1arwskydtxc8w6jw0pa227yslmzrwllspxrlaga --output json --gas auto --gas-adjustment 1.2 --fees 500ugrain -y
+e67398c07dafe792a2eacfc5e831859eba9536ff8af52f1f700d43312134cd02
+code_id = 171
+
+palomad tx wasm migrate paloma1r3expjc73az2u3l3zrzfl9c92smtpud0vl53v6tw6l6cg64des0qv6yg7c 172 '{}' \
+--from paloma1arwskydtxc8w6jw0pa227yslmzrwllspxrlaga \
+--gas auto \
+--gas-adjustment 1.2 \
+--output json
+
+palomad tx wasm execute paloma1r3expjc73az2u3l3zrzfl9c92smtpud0vl53v6tw6l6cg64des0qv6yg7c '{"change_config":{"owner":"paloma1fgj5tk2te5j75svhmt4g2ugex85ycsy5jum00p"}}' \
+--from paloma1arwskydtxc8w6jw0pa227yslmzrwllspxrlaga \
+--gas auto \
+--gas-adjustment 1.2 \
+--output json
+
+palomad tx wasm store artifacts/pusd_connector_cw.wasm --from paloma1arwskydtxc8w6jw0pa227yslmzrwllspxrlaga --output json --gas auto --gas-adjustment 1.2 --fees 500ugrain -y
+911525a3b3c0eb4fcc34b47c1492877e26729b4e46549983cd4e908e24e7faac
+code_id = 172
+
+82a93fc77e3607e9dfa81304a430fa9f4ccb8f694c077d4dbc641e9b7f743ff8
+code_id = 173
+
+palomad tx wasm migrate paloma1r3expjc73az2u3l3zrzfl9c92smtpud0vl53v6tw6l6cg64des0qv6yg7c 173 '{}' \
+--from paloma1arwskydtxc8w6jw0pa227yslmzrwllspxrlaga \
+--gas auto \
+--gas-adjustment 1.2 \
+--output json
